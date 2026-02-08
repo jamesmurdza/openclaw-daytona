@@ -6,11 +6,18 @@
   },
   "auth": {
     "profiles": {
-      "anthropic:api": { "provider": "anthropic", "mode": "api_key" }
+      "anthropic:api": {
+        "provider": "anthropic",
+        "mode": "api_key"
+      }
     },
-    "order": { "anthropic": ["anthropic:api"] }
+    "order": {
+      "anthropic": ["anthropic:api"]
+    }
   },
   "channels": {
-    "whatsapp": { "allowFrom": [] }
+    "whatsapp": {
+      "allowFrom": []
+    }
   }
 }
