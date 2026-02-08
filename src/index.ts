@@ -16,6 +16,18 @@ const DAYTONA_SNAPSHOT = "daytona-medium"; // This snapshot has openclaw install
 let currentSandbox: Sandbox | null = null;
 let sandboxDeleted = false;
 
+async function shutdown() {
+  if (sandboxDeleted) return;
+  sandboxDeleted = true;
+  console.log("\nShutting down sandbox...");
+  try {
+    await currentSandbox?.delete(30);
+  } catch (e) {
+    console.error(e);
+  }
+  process.exit(0);
+}
+
 // Read env file and return a record of key-value pairs
 function readEnvFile(path: string): Record<string, string> {
   if (!existsSync(path)) return {};
@@ -62,17 +74,7 @@ async function main() {
   currentSandbox = sandbox;
 
   // Handle SIGINT
-  process.on("SIGINT", async () => {
-    if (sandboxDeleted) return;
-    sandboxDeleted = true;
-    console.log("\nShutting down sandbox...");
-    try {
-      await currentSandbox?.delete(30);
-    } catch (e) {
-      console.error(e);
-    }
-    process.exit(0);
-  });
+  process.on("SIGINT", () => shutdown());
 
   // Get the user home directory
   const home = await sandbox.getUserHomeDir();
@@ -107,20 +109,8 @@ async function main() {
     runAsync: true,
   });
 
-  // Delete sandbox when the process ends
-  const deleteAndExit = async () => {
-    if (sandboxDeleted) return;
-    sandboxDeleted = true;
-    console.log("Deleting sandbox...");
-    try {
-      await currentSandbox?.delete();
-    } catch (e) {
-      console.error(e);
-    }
-    process.exit(0);
-  };
-
   // Stream gateway stdout/stderr to the terminal
+  // Delete sandbox when the process ends
   sandbox.process
     .getSessionCommandLogs(
       sessionId,
@@ -128,8 +118,8 @@ async function main() {
       SHOW_LOGS ? (chunk) => process.stdout.write(chunk) : () => {},
       SHOW_LOGS ? (chunk) => process.stderr.write(chunk) : () => {},
     )
-    .then(deleteAndExit)
-    .catch(deleteAndExit);
+    .then(shutdown)
+    .catch(shutdown);
 
   const signed = await sandbox.getPreviewLink(OPENCLAW_PORT);
   const dashboardUrl = `${signed.url}?token=${gatewayToken}`;
