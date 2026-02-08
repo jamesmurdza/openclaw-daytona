@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import dotenv from "dotenv";
+import { deepMerge } from "./utils.js";
 
 const OPENCLAW_PORT = 18789;
 const SHOW_LOGS = true;
@@ -12,6 +13,7 @@ const USER_CONFIG_PATH = join(process.cwd(), "config.json");
 const ENV_SANDBOX_PATH = join(process.cwd(), ".env.sandbox");
 
 let currentSandbox: Awaited<ReturnType<Daytona["create"]>> | null = null;
+let sandboxDeleted = false;
 
 // OpenClaw config to run in a Daytona sandbox
 const OPENCLAW_CONFIG = {
@@ -28,36 +30,6 @@ const OPENCLAW_CONFIG = {
     },
   },
 };
-
-// Load user config from config.json
-function loadUserConfig(): Record<string, unknown> {
-  return JSON.parse(readFileSync(USER_CONFIG_PATH, "utf8"));
-}
-
-// Merge two objects recursively
-function deepMerge<T>(target: T, source: Record<string, unknown>): T {
-  const out = { ...target } as Record<string, unknown>;
-  for (const key of Object.keys(source)) {
-    const a = (out as Record<string, unknown>)[key];
-    const b = source[key];
-    if (
-      a != null &&
-      b != null &&
-      typeof a === "object" &&
-      typeof b === "object" &&
-      !Array.isArray(a) &&
-      !Array.isArray(b)
-    ) {
-      (out as Record<string, unknown>)[key] = deepMerge(
-        a as Record<string, unknown>,
-        b as Record<string, unknown>,
-      );
-    } else {
-      (out as Record<string, unknown>)[key] = b;
-    }
-  }
-  return out as T;
-}
 
 // Load sandbox env from .env.sandbox
 function loadSandboxEnv(): Record<string, string> {
@@ -91,6 +63,8 @@ async function main() {
   });
   currentSandbox = sandbox;
   process.on("SIGINT", async () => {
+    if (sandboxDeleted) return;
+    sandboxDeleted = true;
     console.log("\nShutting down sandbox...");
     try {
       await currentSandbox?.delete(30);
@@ -103,7 +77,7 @@ async function main() {
   const home = await sandbox.getUserHomeDir().catch(() => "/home/daytona");
   const openclawDir = `${home}/.openclaw`;
 
-  const userConfig = loadUserConfig();
+  const userConfig = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf8"));
   const baseConfig = deepMerge(
     OPENCLAW_CONFIG as Record<string, unknown>,
     userConfig,
@@ -132,7 +106,18 @@ async function main() {
     runAsync: true,
   });
 
-  // Stream gateway stdout/stderr to the terminal
+  // Stream gateway stdout/stderr to the terminal; delete sandbox when gateway ends
+  const deleteAndExit = async () => {
+    if (sandboxDeleted) return;
+    sandboxDeleted = true;
+    console.log("\nGateway ended. Deleting sandbox...");
+    try {
+      await currentSandbox?.delete(30);
+    } catch (e) {
+      console.error(e);
+    }
+    process.exit(0);
+  };
   sandbox.process
     .getSessionCommandLogs(
       sessionId,
@@ -140,7 +125,8 @@ async function main() {
       SHOW_LOGS ? (chunk) => process.stdout.write(chunk) : () => {},
       SHOW_LOGS ? (chunk) => process.stderr.write(chunk) : () => {},
     )
-    .catch(() => {}); // ignore when process exits or connection closes
+    .then(deleteAndExit)
+    .catch(deleteAndExit);
 
   const signed = await sandbox.getPreviewLink(OPENCLAW_PORT);
 
