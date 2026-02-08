@@ -3,7 +3,6 @@ import { Daytona } from '@daytonaio/sdk'
 import { randomBytes } from 'crypto'
 
 const OPENCLAW_PORT = 18789
-const PREVIEW_EXPIRES_SECONDS = 3600 // 1 hour
 const GATEWAY_START_WAIT_MS = 8000
 
 let currentSandbox: Awaited<ReturnType<Daytona['create']>> | null = null
@@ -76,10 +75,6 @@ async function main() {
   console.log('Writing OpenClaw config...')
   await sandbox.process.executeCommand(`mkdir -p ${openclawDir}`)
   await sandbox.fs.uploadFile(Buffer.from(configJson, 'utf8'), `${openclawDir}/openclaw.json`)
-  await sandbox.fs.uploadFile(
-    Buffer.from('DEV_MODE=true\n', 'utf8'),
-    `${openclawDir}/.dev.vars`,
-  )
 
   // API key is provided via sandbox env; OpenClaw reads it for anthropic api_key profile
   const sessionId = 'openclaw-gateway'
@@ -120,8 +115,6 @@ async function main() {
   const dashboardUrl = signed.url + (signed.url.includes('?') ? '&' : '?') + `token=${gatewayToken}`
   console.log('\n--- OpenClaw dashboard ---')
   console.log(dashboardUrl)
-  console.log('\nGateway token (included in URL above):', gatewayToken)
-  console.log('Preview URL expires in', PREVIEW_EXPIRES_SECONDS / 60, 'minutes; re-run to get a new one.')
   console.log('Ctrl+C to shut down and delete the sandbox.')
 }
 
