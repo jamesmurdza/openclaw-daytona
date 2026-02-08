@@ -94,20 +94,7 @@ async function main() {
     )
     .catch(() => {}) // ignore when process exits or connection closes
 
-  const maxAttempts = 3
-  const retryDelayMs = 5000
-  let signed: Awaited<ReturnType<typeof sandbox.getPreviewLink>> | null = null
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      signed = await sandbox.getPreviewLink(OPENCLAW_PORT)
-      break
-    } catch (err) {
-      if (attempt === maxAttempts) throw err
-      console.log(`Preview URL request timed out, retrying in ${retryDelayMs / 1000}s (${attempt}/${maxAttempts})...`)
-      await new Promise((r) => setTimeout(r, retryDelayMs))
-    }
-  }
-  if (!signed) throw new Error('Failed to get preview URL')
+  const signed = await sandbox.getPreviewLink(OPENCLAW_PORT)
 
   const dashboardUrl = signed.url + (signed.url.includes('?') ? '&' : '?') + `token=${gatewayToken}`
   console.log('\n--- OpenClaw dashboard ---')
