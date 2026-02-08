@@ -1,11 +1,11 @@
 import "dotenv/config";
 import { Daytona, Sandbox } from "@daytonaio/sdk";
 import { randomBytes } from "crypto";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync } from "fs";
 import { join } from "path";
-import dotenv from "dotenv";
-import { deepMerge } from "./utils.js";
+import { deepMerge, readEnvFile } from "./utils.js";
 
+// Constants
 const OPENCLAW_PORT = 18789;
 const SHOW_LOGS = true;
 const MAKE_PUBLIC = true;
@@ -13,9 +13,11 @@ const USER_CONFIG_PATH = join(process.cwd(), "config.json");
 const ENV_SANDBOX_PATH = join(process.cwd(), ".env.sandbox");
 const DAYTONA_SNAPSHOT = "daytona-medium"; // This snapshot has openclaw installed
 
+// Global variables
 let currentSandbox: Sandbox | null = null;
 let sandboxDeleted = false;
 
+// Shutdown the sandbox
 async function shutdown() {
   if (sandboxDeleted) return;
   sandboxDeleted = true;
@@ -26,18 +28,6 @@ async function shutdown() {
     console.error(e);
   }
   process.exit(0);
-}
-
-// Read env file and return a record of key-value pairs
-function readEnvFile(path: string): Record<string, string> {
-  if (!existsSync(path)) return {};
-  const parsed = dotenv.parse(readFileSync(path));
-  return Object.fromEntries(
-    Object.entries(parsed).filter(([, v]) => v != null && v !== "") as [
-      string,
-      string,
-    ][],
-  ) as Record<string, string>;
 }
 
 // OpenClaw config to run in a Daytona sandbox
@@ -62,9 +52,7 @@ async function main() {
   const daytona = new Daytona();
 
   // Create a new sandbox
-  console.log(
-    "Creating Daytona sandbox (daytona-medium, auto-stop disabled)...",
-  );
+  console.log("Creating Daytona sandbox...");
   const sandbox = await daytona.create({
     snapshot: DAYTONA_SNAPSHOT,
     autoStopInterval: 0,
@@ -93,7 +81,7 @@ async function main() {
   });
 
   // Write the config to the sandbox
-  console.log("Writing OpenClaw config...");
+  console.log("Configuring OpenClaw...");
   await sandbox.process.executeCommand(`mkdir -p ${openclawDir}`);
   await sandbox.fs.uploadFile(
     Buffer.from(JSON.stringify(config, null, 2), "utf8"),
@@ -102,15 +90,15 @@ async function main() {
 
   // Start the gateway
   const sessionId = "openclaw-gateway";
-  console.log("Starting OpenClaw gateway (streaming output)...");
+  console.log("Starting OpenClaw...");
   await sandbox.process.createSession(sessionId);
   const { cmdId } = await sandbox.process.executeSessionCommand(sessionId, {
     command: "openclaw gateway run",
     runAsync: true,
   });
+  console.log("(Ctrl+C to shut down and delete the sandbox)");
 
-  // Stream gateway stdout/stderr to the terminal
-  // Delete sandbox when the process ends
+  // Stream OpenClaw output to the terminal and delete the sandbox when the process ends
   sandbox.process
     .getSessionCommandLogs(
       sessionId,
@@ -124,8 +112,9 @@ async function main() {
   const signed = await sandbox.getPreviewLink(OPENCLAW_PORT);
   const dashboardUrl = `${signed.url}?token=${gatewayToken}`;
   
-  console.log(`Dashboard URL: ${dashboardUrl}`);
-  console.log("Ctrl+C to shut down and delete the sandbox.");
+  console.log(`\n\x1b[1m🔗 Secret link to Control UI: ${dashboardUrl}\x1b[0m`);
+  console.log(`\nOpenClaw is starting...`);
+  console.log("--------------------------------");
 }
 
 main().catch((err) => {
