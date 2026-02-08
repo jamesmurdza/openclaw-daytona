@@ -1,45 +1,64 @@
-# OpenClaw in a Daytona Sandbox
+# Pre-configured OpenClaw Sandbox
 
-Run **OpenClaw** (AI agents, Claude, channels like WhatsApp) in a **cloud Daytona sandbox** with zero local install. Give you a public URL to the OpenClaw dashboard, fully wired with your config and secrets. Ctrl+C deletes the sandbox.
+## Overview
+
+This example runs [OpenClaw](https://openclaw.ai/), a general purpose AI assistant, inside a Daytona sandbox. You can interact with OpenClaw via its Control UI using a [Daytona preview link](https://www.daytona.io/docs/en/preview-and-authentication/#fetching-a-preview-link).
+
+## Features
+
+- **Secure sandbox execution:** OpenClaw runs in a controlled environment, along with any code or commands run by agents.
+- **Multi-channel gateway:** Can connect to WhatsApp, Telegram, Discord, and more simultaneously.
+- **Preview Control UI:** Use Daytona preview links to access the OpenClaw web dashboard with no local install.
+- **Flexible LLM support:** Connect to Anthropic, OpenAI, and other providers; configure models via `config.json` and `.env.sandbox`.
 
 ## Prerequisites
 
-### Env setup (step by step)
+- **Node.js:** Version 18 or higher is required
 
-1. **`.env`** (runs locally; used by the Daytona SDK)
-   - Copy `.env.example` to `.env`
-   - Add your key from [Daytona Dashboard](https://app.daytona.io/dashboard/keys):
+## Environment Variables
 
+To run this example, you need to set the following environment variables:
+
+**`.env`** (used by the main script only):
+
+- `DAYTONA_API_KEY`: Required for access to Daytona sandboxes. Get it from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
+
+**`.env.sandbox`** (available inside the OpenClaw sandbox):
+
+- `ANTHROPIC_API_KEY`: Required for Claude. Get it from [Anthropic Console](https://console.anthropic.com/)
+- Any other variables you add here are loaded into the sandbox environment
+
+Create these files in the project directory (copy from `.env.example` and `.env.sandbox.example`).
+
+## Getting Started
+
+### Setup and Run
+
+1. Install dependencies:
+
+   ```bash
+   npm install
    ```
-   DAYTONA_API_KEY=your_key_here
+
+2. Run the example:
+
+   ```bash
+   npm start
    ```
 
-2. **`.env.sandbox`** (injected into the sandbox; used by OpenClaw)
-   - Copy `.env.sandbox.example` to `.env.sandbox`
-   - Add your key from [Anthropic Console](https://console.anthropic.com/):
+## How It Works
 
-   ```
-   ANTHROPIC_API_KEY=your_key_here
-   ```
-   - Any other vars you add here are loaded into the sandbox environment
+When this example is run, the agent follows the following workflow:
 
-## Usage
+1. A new Daytona sandbox is created (using the `daytona-medium` snapshot with OpenClaw preinstalled).
+2. OpenClaw is configured with your `config.json` and `.env.sandbox` secrets.
+3. The OpenClaw gateway starts inside the sandbox.
+4. A Daytona preview link is shown pointing to the OpenClaw Control UI.
+5. When the script is terminated (Ctrl+C), the sandbox is deleted.
 
-```bash
-npm install
-npm start
+## Example Output
+
 ```
-
-Requires no interaction. When it finishes, open the printed URL in your browser (the gateway token is included in the URL). Ctrl+C shuts down and deletes the sandbox.
-
-### Example session
-
-```
-$npm start
-
-> daytonaclaw@1.0.0 start
-> tsx src/index.ts
-
 Creating Daytona sandbox...
 Configuring OpenClaw...
 Starting OpenClaw...
@@ -59,11 +78,61 @@ OpenClaw logs:
 ├─────────────────────────────────────────╯
 ```
 
+Open the provided URL in your browser to interact with the OpenClaw agent via the Control UI.
+
 ## Configuration
 
-- **`config.json`** – OpenClaw config merged with defaults
-- **`src/index.ts`** – Edit `SHOW_LOGS`, `MAKE_PUBLIC`, `OPENCLAW_PORT` for runtime behavior
+### Script configuration
 
-## Notes
+You will find several constants in `src/index.ts` which control the bahavior of the script:
 
-- Sandbox is deleted on Ctrl+C or when the process exits.
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `OPENCLAW_PORT` | 18789 | OpenClaw Gateway and Control UI port |
+| `SHOW_LOGS` | true | Stream OpenClaw stdout/stderr to the terminal. |
+| `MAKE_PUBLIC` | true | Expose the sandbox for public internet access. |
+| `DAYTONA_SNAPSHOT` | daytona-medium | Sandbox image with OpenClaw preinstalled. |
+
+### OpenClaw Configuration
+
+You can tailor OpenClaw to your setup by editing `config.json`. The script combines this file with with built-in defaults and an authorization token, and writes the result to `~/.openclaw/openclaw.json` inside the sandbox.
+
+The default congiguration is:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "model": { "primary": "anthropic/claude-sonnet-4-5" }
+    }
+  },
+  "auth": {
+    "profiles": {
+      "anthropic:api": { "provider": "anthropic", "mode": "api_key" }
+    },
+    "order": { "anthropic": ["anthropic:api"] }
+  },
+  "channels": {
+    "whatsapp": { "allowFrom": [] }
+  }
+}
+```
+
+In order to accept WhatsApp messages, the numbers of the allowed senders need to be added to the allowFrom list.
+
+You can extend it with additional sections:
+
+| Section | Purpose |
+|--------|---------|
+| `agents.defaults` | [Which model to use, workspace path, and timeouts](https://docs.openclaw.ai/gateway/configuration#agents-defaults) |
+| `auth` | [API keys and OAuth for Anthropic, OpenAI, etc.](https://docs.openclaw.ai/gateway/configuration#auth) |
+| `channels` | [Who can message the bot on WhatsApp, Telegram, Discord](https://docs.openclaw.ai/gateway/configuration#channels-whatsapp-allowfrom) |
+| `identity` | [Assistant name, theme, and emoji](https://docs.openclaw.ai/gateway/configuration#agents-list-identity) |
+| `models` | [Add OpenRouter, local LLMs, or other providers](https://docs.openclaw.ai/gateway/configuration#models) |
+
+For full schema and patterns see [Configuration Examples](https://docs.openclaw.ai/gateway/configuration-examples) in the OpenClaw documentation.
+
+## References
+
+- [OpenClaw Documentation](https://docs.openclaw.ai/)
+- [Daytona Documentation](https://www.daytona.io/docs)
