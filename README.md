@@ -1,4 +1,4 @@
-# Pre-configured OpenClaw Sandbox
+# OpenClaw Daytona Sandbox
 
 ## Overview
 
