@@ -8,11 +8,19 @@ Run **OpenClaw** (AI agents, Claude, channels like WhatsApp) in a **cloud Dayton
 
 1. **`.env`** (runs locally; used by the Daytona SDK)
    - Copy `.env.example` to `.env`
-   - Add `DAYTONA_API_KEY=` from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
+   - Add your key from [Daytona Dashboard](https://app.daytona.io/dashboard/keys):
+
+   ```
+   DAYTONA_API_KEY=your_key_here
+   ```
 
 2. **`.env.sandbox`** (injected into the sandbox; used by OpenClaw)
    - Copy `.env.sandbox.example` to `.env.sandbox`
-   - Add `ANTHROPIC_API_KEY=` from [Anthropic Console](https://console.anthropic.com/)
+   - Add your key from [Anthropic Console](https://console.anthropic.com/):
+
+   ```
+   ANTHROPIC_API_KEY=your_key_here
+   ```
    - Any other vars you add here are loaded into the sandbox environment
 
 ## Usage
