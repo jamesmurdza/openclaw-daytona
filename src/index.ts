@@ -3,6 +3,7 @@ import { Daytona } from '@daytonaio/sdk'
 import { randomBytes } from 'crypto'
 
 const OPENCLAW_PORT = 18789
+const SHOW_LOGS = true
 
 let currentSandbox: Awaited<ReturnType<Daytona['create']>> | null = null
 
@@ -89,8 +90,8 @@ async function main() {
     .getSessionCommandLogs(
       sessionId,
       cmdId!,
-      (chunk) => process.stdout.write(chunk),
-      (chunk) => process.stderr.write(chunk),
+      SHOW_LOGS ? (chunk) => process.stdout.write(chunk) : () => {},
+      SHOW_LOGS ? (chunk) => process.stderr.write(chunk) : () => {},
     )
     .catch(() => {}) // ignore when process exits or connection closes
 
