@@ -71,30 +71,30 @@ async function main() {
     process.exit(0);
   });
 
-  const home = await sandbox.getUserHomeDir().catch(() => "/home/daytona");
+  // Get the user home directory
+  const home = await sandbox.getUserHomeDir();
   const openclawDir = `${home}/.openclaw`;
 
+  // Read the user config and merge it with the base config
   const userConfig = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf8"));
-  const baseConfig = deepMerge(
-    OPENCLAW_CONFIG as Record<string, unknown>,
-    userConfig,
-  ) as typeof OPENCLAW_CONFIG & Record<string, unknown>;
-  const config = {
-    ...baseConfig,
+  const baseConfig = deepMerge(OPENCLAW_CONFIG, userConfig);
+
+  // Add the gateway token to the config
+  const config = deepMerge(baseConfig, {
     gateway: {
-      ...baseConfig.gateway,
       auth: { mode: "token" as const, token: gatewayToken },
     },
-  };
-  const configJson = JSON.stringify(config, null, 2);
+  });
 
+  // Write the config to the sandbox
   console.log("Writing OpenClaw config...");
   await sandbox.process.executeCommand(`mkdir -p ${openclawDir}`);
   await sandbox.fs.uploadFile(
-    Buffer.from(configJson, "utf8"),
+    Buffer.from(JSON.stringify(config, null, 2), "utf8"),
     `${openclawDir}/openclaw.json`,
   );
 
+  // Start the gateway
   const sessionId = "openclaw-gateway";
   console.log("Starting OpenClaw gateway (streaming output)...");
   await sandbox.process.createSession(sessionId);
@@ -103,18 +103,20 @@ async function main() {
     runAsync: true,
   });
 
-  // Stream gateway stdout/stderr to the terminal; delete sandbox when gateway ends
+  // Delete sandbox when the process ends
   const deleteAndExit = async () => {
     if (sandboxDeleted) return;
     sandboxDeleted = true;
-    console.log("\nGateway ended. Deleting sandbox...");
+    console.log("Deleting sandbox...");
     try {
-      await currentSandbox?.delete(30);
+      await currentSandbox?.delete();
     } catch (e) {
       console.error(e);
     }
     process.exit(0);
   };
+
+  // Stream gateway stdout/stderr to the terminal
   sandbox.process
     .getSessionCommandLogs(
       sessionId,
