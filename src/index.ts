@@ -3,7 +3,6 @@ import { Daytona } from '@daytonaio/sdk'
 import { randomBytes } from 'crypto'
 
 const OPENCLAW_PORT = 18789
-const GATEWAY_START_WAIT_MS = 8000
 
 let currentSandbox: Awaited<ReturnType<Daytona['create']>> | null = null
 
@@ -84,8 +83,6 @@ async function main() {
     command: 'openclaw gateway run',
     runAsync: true,
   })
-
-  await new Promise((r) => setTimeout(r, GATEWAY_START_WAIT_MS))
 
   // Stream gateway stdout/stderr to the terminal
   sandbox.process
