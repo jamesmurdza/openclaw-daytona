@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Daytona } from "@daytonaio/sdk";
+import { Daytona, Sandbox } from "@daytonaio/sdk";
 import { randomBytes } from "crypto";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
@@ -11,9 +11,22 @@ const SHOW_LOGS = true;
 const MAKE_PUBLIC = true;
 const USER_CONFIG_PATH = join(process.cwd(), "config.json");
 const ENV_SANDBOX_PATH = join(process.cwd(), ".env.sandbox");
+const DAYTONA_SNAPSHOT = "daytona-medium"; // This snapshot has openclaw installed
 
-let currentSandbox: Awaited<ReturnType<Daytona["create"]>> | null = null;
+let currentSandbox: Sandbox | null = null;
 let sandboxDeleted = false;
+
+// Read env file and return a record of key-value pairs
+function readEnvFile(path: string): Record<string, string> {
+  if (!existsSync(path)) return {};
+  const parsed = dotenv.parse(readFileSync(path));
+  return Object.fromEntries(
+    Object.entries(parsed).filter(([, v]) => v != null && v !== "") as [
+      string,
+      string,
+    ][],
+  ) as Record<string, string>;
+}
 
 // OpenClaw config to run in a Daytona sandbox
 const OPENCLAW_CONFIG = {
@@ -31,24 +44,8 @@ const OPENCLAW_CONFIG = {
   },
 };
 
-// Load sandbox env from .env.sandbox
-function loadSandboxEnv(): Record<string, string> {
-  if (existsSync(ENV_SANDBOX_PATH)) {
-    const parsed = dotenv.parse(readFileSync(ENV_SANDBOX_PATH));
-    return Object.fromEntries(
-      Object.entries(parsed).filter(([, v]) => v != null && v !== "") as [
-        string,
-        string,
-      ][],
-    ) as Record<string, string>;
-  }
-  return {};
-}
-
 // Main function
 async function main() {
-  const sandboxEnv = loadSandboxEnv();
-
   const daytona = new Daytona();
   const gatewayToken = randomBytes(24).toString("hex");
 
@@ -56,9 +53,9 @@ async function main() {
     "Creating Daytona sandbox (daytona-medium, auto-stop disabled)...",
   );
   const sandbox = await daytona.create({
-    snapshot: "daytona-medium", // This snapshot has openclaw installed
+    snapshot: DAYTONA_SNAPSHOT,
     autoStopInterval: 0,
-    envVars: sandboxEnv,
+    envVars: readEnvFile(ENV_SANDBOX_PATH),
     public: MAKE_PUBLIC,
   });
   currentSandbox = sandbox;
@@ -129,12 +126,9 @@ async function main() {
     .catch(deleteAndExit);
 
   const signed = await sandbox.getPreviewLink(OPENCLAW_PORT);
-
-  const dashboardUrl =
-    signed.url +
-    (signed.url.includes("?") ? "&" : "?") +
-    `token=${gatewayToken}`;
-  console.log("Dashboard URL: " + dashboardUrl);
+  const dashboardUrl = `${signed.url}?token=${gatewayToken}`;
+  
+  console.log(`Dashboard URL: ${dashboardUrl}`);
   console.log("Ctrl+C to shut down and delete the sandbox.");
 }
 
