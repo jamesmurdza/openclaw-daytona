@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 
 const OPENCLAW_PORT = 18789
 const SHOW_LOGS = true
+const MAKE_PUBLIC = true
 
 let currentSandbox: Awaited<ReturnType<Daytona['create']>> | null = null
 
@@ -14,7 +15,7 @@ export const OPENCLAW_SETTINGS = {
     port: OPENCLAW_PORT,
     bind: 'lan', // required so Daytona preview proxy can reach the gateway (loopback rejects external connections)
     auth: { mode: 'token' as const, token: '' }, // filled at runtime
-    controlUi: { allowInsecureAuth: true },
+    controlUi: { allowInsecureAuth: true }
   },
   agents: {
     defaults: {
@@ -48,6 +49,7 @@ async function main() {
     snapshot: 'daytona-medium', // This snapshot has openclaw installed
     autoStopInterval: 0,
     envVars: { ANTHROPIC_API_KEY: apiKey },
+    public: MAKE_PUBLIC,
   })
   currentSandbox = sandbox
   process.on('SIGINT', async () => {
