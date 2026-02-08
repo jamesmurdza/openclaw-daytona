@@ -9,7 +9,7 @@ This example runs [OpenClaw](https://openclaw.ai/), a general purpose AI assista
 - **Secure sandbox execution:** OpenClaw runs in a controlled environment, along with any code or commands run by agents.
 - **Multi-channel gateway:** Can connect to WhatsApp, Telegram, Discord, and more simultaneously.
 - **Preview Control UI:** Use Daytona preview links to access the OpenClaw web dashboard with no local install.
-- **Flexible LLM support:** Connect to Anthropic, OpenAI, and other providers; configure models via `config.json` and `.env.sandbox`.
+- **Flexible LLM support:** Connect to Anthropic, OpenAI, and other providers; configure models via `opencode.json` and `.env.sandbox`.
 
 ## Prerequisites
 
@@ -51,7 +51,7 @@ Create these files in the project directory (copy from `.env.example` and `.env.
 When this example is run, the agent follows the following workflow:
 
 1. A new Daytona sandbox is created (using the `daytona-medium` snapshot with OpenClaw preinstalled).
-2. OpenClaw is configured with your `config.json` and `.env.sandbox` secrets.
+2. OpenClaw is configured with your `opencode.json` and `.env.sandbox` secrets.
 3. The OpenClaw gateway starts inside the sandbox.
 4. A Daytona preview link is shown pointing to the OpenClaw Control UI.
 5. When the script is terminated (Ctrl+C), the sandbox is deleted.
@@ -95,7 +95,7 @@ You will find several constants in `src/index.ts` which control the bahavior of 
 
 ### OpenClaw Configuration
 
-You can tailor OpenClaw to your setup by editing `config.json`. The script combines this file with with built-in defaults and an authorization token, and writes the result to `~/.openclaw/openclaw.json` inside the sandbox.
+You can tailor OpenClaw to your setup by editing `opencode.json`. The script combines this file with with built-in defaults and an authorization token, and writes the result to `~/.openclaw/openclaw.json` inside the sandbox.
 
 The default congiguration is:
 

@@ -9,7 +9,7 @@ import { deepMerge, readEnvFile } from "./utils.js";
 const OPENCLAW_PORT = 18789;
 const SHOW_LOGS = true;
 const MAKE_PUBLIC = true;
-const USER_CONFIG_PATH = join(process.cwd(), "config.json");
+const USER_CONFIG_PATH = join(process.cwd(), "opencode.json");
 const ENV_SANDBOX_PATH = join(process.cwd(), ".env.sandbox");
 const DAYTONA_SNAPSHOT = "daytona-medium"; // This snapshot has openclaw installed
 
