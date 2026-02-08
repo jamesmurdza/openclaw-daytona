@@ -44,7 +44,7 @@ async function main() {
 
   console.log('Creating Daytona sandbox (daytona-medium, auto-stop disabled)...')
   const sandbox = await daytona.create({
-    snapshot: 'daytona-medium',
+    snapshot: 'daytona-medium', // This snapshot has openclaw installed
     autoStopInterval: 0,
     envVars: { ANTHROPIC_API_KEY: apiKey },
   })
