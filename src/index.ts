@@ -46,9 +46,10 @@ const OPENCLAW_CONFIG = {
 
 // Main function
 async function main() {
+  // Create a new Daytona instance
   const daytona = new Daytona();
-  const gatewayToken = randomBytes(24).toString("hex");
 
+  // Create a new sandbox
   console.log(
     "Creating Daytona sandbox (daytona-medium, auto-stop disabled)...",
   );
@@ -59,6 +60,8 @@ async function main() {
     public: MAKE_PUBLIC,
   });
   currentSandbox = sandbox;
+
+  // Handle SIGINT
   process.on("SIGINT", async () => {
     if (sandboxDeleted) return;
     sandboxDeleted = true;
@@ -79,7 +82,8 @@ async function main() {
   const userConfig = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf8"));
   const baseConfig = deepMerge(OPENCLAW_CONFIG, userConfig);
 
-  // Add the gateway token to the config
+  // Generate a random gateway token and add it to the config
+  const gatewayToken = randomBytes(24).toString("hex");
   const config = deepMerge(baseConfig, {
     gateway: {
       auth: { mode: "token" as const, token: gatewayToken },
